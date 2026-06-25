@@ -1,0 +1,11 @@
+{
+  "name": "Design Lead is on vacation",
+  "id": "com.pixso.design-lead-is-on-vacation",
+  "api": "1.0.0",
+  "main": "code.js",
+  "ui": "ui.html",
+  "editorType": ["pixso"],
+  "documentAccess": "dynamic-page",
+  "menu": [{ "name": "Open Design Lead is on vacation", "command": "open" }],
+  "networkAccess": { "allowedDomains": ["none"] }
+}

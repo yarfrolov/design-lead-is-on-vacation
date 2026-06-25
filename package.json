@@ -1,0 +1,21 @@
+{
+  "name": "design-lead-is-on-vacation",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pixso plugin: designer checklist + WCAG 2.1 contrast check.",
+  "scripts": {
+    "build": "npm run build:ts && npm run build:js",
+    "build:ts": "npx tsc",
+    "build:js": "node build-esbuild.mjs",
+    "watch": "node build-esbuild.mjs --watch",
+    "test": "node --import tsx/esm --test tests/*.test.ts"
+  },
+  "license": "ISC",
+  "type": "module",
+  "devDependencies": {
+    "@figma/plugin-typings": "^1.117.0",
+    "esbuild": "^0.24.0",
+    "tsx": "^4.19.4",
+    "typescript": "^5.9.2"
+  }
+}

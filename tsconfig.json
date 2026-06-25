@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "ES2019",
+    "module": "ESNext",
+    "strict": true,
+    "lib": ["ES2020", "DOM"],
+    "types": [],
+    "typeRoots": ["./", "./node_modules/@types"],
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true
+  },
+  "include": [
+    "code.ts",
+    "ui.ts",
+    "src/**/*.ts",
+    "pixso-types.d.ts"
+  ],
+  "exclude": ["node_modules"]
+}

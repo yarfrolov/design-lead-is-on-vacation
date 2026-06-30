@@ -90,9 +90,14 @@ export function renderContrastPanel(
   report: ContrastReport | null,
   tab: "issues" | "passed",
   pending: boolean,
-  showRefresh = true
+  showRefresh = true,
+  error: string | null = null
 ): HTMLElement {
   const panel = el("div");
+
+  if (error) {
+    panel.appendChild(el("div", { className: "ai-error", textContent: error }));
+  }
 
   if (report && showRefresh) {
     const tabsRow = el("div", { className: "contrast-tabs" },

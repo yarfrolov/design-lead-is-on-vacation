@@ -6,14 +6,12 @@ declare const __html__: string;
 import type { SceneNode } from "./pixso-types";
 import { buildReport, type ContrastReport } from "./src/analyze";
 import { collectTextNodes } from "./src/collect-text";
+import { extractDesignContext, type DesignContext } from "./src/extract-design";
+import { getContrastScanRoots } from "./src/get-scan-roots";
 import { unwrapPluginMessage } from "./src/messages";
 
 function isSceneNode(node: import("./pixso-types").BaseNodeMixin | null): node is SceneNode {
   return node !== null && node.type !== "PAGE" && node.type !== "DOCUMENT";
-}
-
-function getPageFrames(): SceneNode[] {
-  return pixso.currentPage.children.filter(isSceneNode);
 }
 
 function emptyReport(reason: ContrastReport["emptyReason"]): ContrastReport {
@@ -26,25 +24,40 @@ function emptyReport(reason: ContrastReport["emptyReason"]): ContrastReport {
   };
 }
 
-function runContrastCheckOnPage(): ContrastReport {
-  const frames = getPageFrames();
-  if (frames.length === 0) {
-    return emptyReport("no-frames");
+function getPageChildren(): SceneNode[] {
+  return pixso.currentPage.children.filter(isSceneNode);
+}
+
+function scanSelectedMocks(): {
+  contrastReport: ContrastReport;
+  designContext: DesignContext;
+} {
+  const pageName = pixso.currentPage.name;
+  const scanRoots = getContrastScanRoots(pixso.currentPage.selection, getPageChildren());
+
+  if (scanRoots.length === 0) {
+    return {
+      contrastReport: emptyReport("no-frames"),
+      designContext: extractDesignContext([], pageName),
+    };
   }
 
-  pixso.currentPage.selection = frames;
-  pixso.viewport.scrollAndZoomIntoView(frames);
+  pixso.viewport.scrollAndZoomIntoView(scanRoots);
 
-  const textNodes = frames.flatMap((frame) => collectTextNodes(frame));
-  if (textNodes.length === 0) {
-    return emptyReport("no-text");
-  }
+  const textNodes = scanRoots.flatMap((root) => collectTextNodes(root));
+  const designContext = extractDesignContext(scanRoots, pageName);
+  const contrastReport =
+    textNodes.length === 0 ? emptyReport("no-text") : buildReport(textNodes);
 
-  return buildReport(textNodes);
+  return { contrastReport, designContext };
 }
 
 function sendReport(report: ContrastReport): void {
   pixso.ui.postMessage({ type: "report", report });
+}
+
+function sendDesignContext(context: DesignContext): void {
+  pixso.ui.postMessage({ type: "design-context", context });
 }
 
 pixso.on("run", () => {
@@ -60,7 +73,25 @@ pixso.on("run", () => {
     if (!msg) return;
 
     if (msg.type === "run-contrast-check") {
-      sendReport(runContrastCheckOnPage());
+      try {
+        sendReport(scanSelectedMocks().contrastReport);
+      } catch (error) {
+        console.error("Contrast scan failed:", error);
+        sendReport(emptyReport("no-text"));
+      }
+      return;
+    }
+
+    if (msg.type === "run-ai-review") {
+      try {
+        const { contrastReport, designContext } = scanSelectedMocks();
+        sendReport(contrastReport);
+        sendDesignContext(designContext);
+      } catch (error) {
+        console.error("AI review scan failed:", error);
+        sendReport(emptyReport("no-text"));
+        sendDesignContext(extractDesignContext([], pixso.currentPage.name));
+      }
       return;
     }
 

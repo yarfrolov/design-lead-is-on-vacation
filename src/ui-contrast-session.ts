@@ -7,6 +7,7 @@ export type ContrastSessionState = {
   tab: "issues" | "passed";
   pending: boolean;
   onlyView: boolean;
+  error: string | null;
 };
 
 export function createContrastSession(): ContrastSessionState {
@@ -15,6 +16,7 @@ export function createContrastSession(): ContrastSessionState {
     tab: "issues",
     pending: false,
     onlyView: false,
+    error: null,
   };
 }
 

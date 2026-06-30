@@ -5,6 +5,49 @@ import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+function loadEnvFile() {
+  const env = {};
+  try {
+    const content = readFileSync(join(__dirname, ".env"), "utf8");
+    for (const line of content.split("\n")) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) continue;
+      const eq = trimmed.indexOf("=");
+      if (eq <= 0) continue;
+      const key = trimmed.slice(0, eq).trim();
+      let value = trimmed.slice(eq + 1).trim();
+      if (
+        (value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))
+      ) {
+        value = value.slice(1, -1);
+      }
+      env[key] = value;
+    }
+  } catch {
+    // .env is optional — settings can be entered in the plugin UI.
+  }
+  return env;
+}
+
+const env = loadEnvFile();
+
+function loadLoaderVideoDataUrl() {
+  try {
+    const bytes = readFileSync(join(__dirname, "assets/loader.webm"));
+    return `data:video/webm;base64,${bytes.toString("base64")}`;
+  } catch {
+    return "";
+  }
+}
+
+const llmDefines = {
+  __LLM_API_URL__: JSON.stringify(env.LLM_API_URL ?? ""),
+  __LLM_TOKEN__: JSON.stringify(env.LLM_TOKEN ?? ""),
+  __LLM_MODEL__: JSON.stringify(env.LLM_MODEL ?? "gemma27b"),
+  __LOADER_VIDEO_DATA_URL__: JSON.stringify(loadLoaderVideoDataUrl()),
+};
+
 const commonOptions = {
   bundle: true,
   platform: "browser",
@@ -59,6 +102,7 @@ if (watch) {
     ...buildOptions,
     entryPoints: [join(__dirname, "ui.ts")],
     outfile: join(__dirname, "ui.js"),
+    define: llmDefines,
     plugins: [inlineUiHtmlPlugin()],
   });
   await Promise.all([codeCtx.watch(), uiCtx.watch()]);
@@ -74,6 +118,7 @@ if (watch) {
       ...buildOptions,
       entryPoints: [join(__dirname, "ui.ts")],
       outfile: join(__dirname, "ui.js"),
+      define: llmDefines,
       plugins: [inlineUiHtmlPlugin()],
     }),
   ]);

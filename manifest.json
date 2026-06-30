@@ -7,5 +7,5 @@
   "editorType": ["pixso"],
   "documentAccess": "dynamic-page",
   "menu": [{ "name": "Open Design Lead is on vacation", "command": "open" }],
-  "networkAccess": { "allowedDomains": ["none"] }
+  "networkAccess": { "allowedDomains": ["https://api-videocat.m2.ru"] }
 }

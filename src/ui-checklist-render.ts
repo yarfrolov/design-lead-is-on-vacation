@@ -1,4 +1,5 @@
 import type { ContrastReport } from "./analyze";
+import { renderAiReviewOnly, renderStartScreen } from "./ai-review-render";
 import {
   CHECKLIST_ITEMS,
   getCurrentItem,
@@ -6,16 +7,21 @@ import {
   getTodoItems,
   isContrastItem,
   isQuizComplete,
+  shouldShowStartScreen,
   type ChecklistState,
 } from "./checklist-state";
 import { renderContrastPanel } from "./contrast-render";
 import type { ContrastSessionState } from "./ui-contrast-session";
+import type { AiReviewSessionState } from "./ui-ai-review-session";
+import { getPendingLoaderMessage, renderPendingLoader } from "./ui-loader";
 import { backChevronSvg, button, el } from "./ui-dom";
 import { pluralize } from "./ui-pluralize";
 
 export type ChecklistRenderInput = {
   state: ChecklistState;
   contrast: ContrastSessionState;
+  aiReview: AiReviewSessionState;
+  manualStarted: boolean;
 };
 
 function renderQuizMeta(state: ChecklistState): HTMLElement {
@@ -29,6 +35,7 @@ function renderQuizMeta(state: ChecklistState): HTMLElement {
     el(
       "div",
       { className: "quiz-meta-links" },
+      button("Проверить через ИИ", { className: "meta-link", "data-action": "run-ai-review" }),
       button("Проверить контраст", { className: "meta-link", "data-action": "contrast-only" }),
       button(`Доработки (${getTodoItems(state).length})`, {
         className: "meta-link",
@@ -173,7 +180,7 @@ function renderResults(state: ChecklistState, contrast: ContrastSessionState): H
         "div",
         { className: "results-section" },
         el("h2", { className: "results-title", textContent: "Контраст" }),
-        renderContrastPanel(contrast.report, contrast.tab, contrast.pending)
+        renderContrastPanel(contrast.report, contrast.tab, contrast.pending, true, contrast.error)
       )
     ),
     el(
@@ -230,7 +237,7 @@ function renderContrastOnly(contrast: ContrastSessionState): HTMLElement {
       "div",
       { className: "panel-scroll" },
       el("h2", { className: "results-title", textContent: "Контраст" }),
-      renderContrastPanel(contrast.report, contrast.tab, contrast.pending)
+      renderContrastPanel(contrast.report, contrast.tab, contrast.pending, true, contrast.error)
     ),
     el(
       "div",
@@ -256,10 +263,23 @@ function renderQuiz(state: ChecklistState, contrast: ContrastSessionState): HTML
 }
 
 export function renderChecklistBody(input: ChecklistRenderInput): HTMLElement {
-  const { state, contrast } = input;
+  const { state, contrast, aiReview, manualStarted } = input;
+
+  const loaderMessage = getPendingLoaderMessage({ contrast, aiReview });
+  if (loaderMessage) {
+    return renderPendingLoader(loaderMessage);
+  }
+
+  if (aiReview.onlyView) {
+    return renderAiReviewOnly(aiReview, contrast);
+  }
 
   if (contrast.onlyView) {
     return renderContrastOnly(contrast);
+  }
+
+  if (!manualStarted && shouldShowStartScreen(state)) {
+    return renderStartScreen();
   }
 
   if (state.view === "results") {

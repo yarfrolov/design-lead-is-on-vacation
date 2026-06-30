@@ -163,4 +163,38 @@ export function goToQuestion(state: ChecklistState, index: number): ChecklistSta
   return { ...state, currentIndex: clamped, view: "quiz" };
 }
 
+export function hasAnyAnswers(state: ChecklistState): boolean {
+  return Object.keys(state.records).length > 0;
+}
+
+export function shouldShowStartScreen(state: ChecklistState): boolean {
+  return state.view === "quiz" && state.currentIndex === 0 && !hasAnyAnswers(state);
+}
+
+export function applyAiReviewToChecklist(
+  state: ChecklistState,
+  items: Array<{ id: string; answer: "yes" | "no" | "unknown"; comment: string }>
+): ChecklistState {
+  const records = { ...state.records };
+
+  for (const item of items) {
+    if (item.answer === "unknown") continue;
+    records[item.id] = {
+      itemId: item.id,
+      answer: item.answer,
+      comment: item.answer === "no" ? item.comment.trim() : "",
+      answeredAt: Date.now(),
+    };
+  }
+
+  const firstUnanswered = CHECKLIST_ITEMS.findIndex((item) => !records[item.id]);
+
+  return {
+    ...state,
+    records,
+    currentIndex: firstUnanswered >= 0 ? firstUnanswered : CHECKLIST_ITEMS.length,
+    view: firstUnanswered >= 0 ? "quiz" : "results",
+  };
+}
+
 export { CHECKLIST_ITEMS };
